@@ -5,17 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>
-// about:blank対策：Safariのbfcache/ページ破棄から復帰したとき
-window.addEventListener('pageshow', function(e){
-  if(e.persisted){
-    // bfcacheから復帰 → DOMが壊れてたらリロード
-    if(!document.getElementById('pg-nav')){
-      location.reload();
-    }
-  }
-});
-</script>
 <meta name="theme-color" content="#1a56a0">
 <title>集配ナビ</title>
 <style>
