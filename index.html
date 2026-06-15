@@ -1089,6 +1089,24 @@ document.addEventListener('visibilitychange', function(){
       })
       .catch(function(e){ console.log('GAS取得エラー:',e); });
   }
+  // Googleマップから戻ったときのabout:blank対策
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible'){
+      if(!document.getElementById('pg-nav')){
+        var url = localStorage.getItem('navHomeUrl');
+        if(url) location.replace(url);
+        else location.reload();
+      }
+    }
+  });
+  window.addEventListener('pageshow', function(e){
+    if(e.persisted && !document.getElementById('pg-nav')){
+      location.reload();
+    }
+  });
+  if(location.href.indexOf('about:blank') === -1){
+    localStorage.setItem('navHomeUrl', location.href.split('?')[0]);
+  }
 })();
 </script>
 </body>
