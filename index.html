@@ -576,6 +576,16 @@ function renderNav(){
   if(f.notes&&f.notes.trim()) h+='<div class="notes-box"><div class="notes-lbl">&#x1F4DD; 注意事項</div><div class="notes-txt">'+f.notes+'</div></div>';
   h+='<button class="big-btn primary" onclick="openNav(\''+f.name+'\')">&#x1F5FA; Googleマップでナビ開始</button>';
   h+='<button class="big-btn outline" onclick="showDet('+f.id+')">&#x1F4CB; 詳細情報を見る</button>';
+  var reqCnt=(S.counts[useId]&&S.counts[useId]['依頼書'])||0;
+  h+='<div class="cnt-sec"><div class="cnt-ttl">&#x1F4C4; 依頼書</div>'+
+     '<div style="background:var(--card);border-radius:10px;border:1.5px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow);">'+
+     '<div style="font-size:17px;font-weight:600;">依頼書枚数</div>'+
+     '<div style="display:flex;align-items:center;gap:10px;">'+
+     '<button class="cnt-btn" onclick="chg(''+useId+'','依頼書',-1)">&#x2212;</button>'+
+     '<div class="cnt-num" id="cnt_'+useId+'_依頼書" style="font-size:26px;min-width:36px;">'+reqCnt+'</div>'+
+     '<button class="cnt-btn" onclick="chg(''+useId+'','依頼書',1)">&#xFF0B;</button>'+
+     '<div style="font-size:15px;color:var(--text-sub);">枚</div>'+
+     '</div></div></div>';
   h+='<div class="cnt-sec"><div class="cnt-ttl">回収容器を入力</div><div class="cnt-grid">';
   CTYPES.forEach(function(type){
     var key='cnt_'+useId+'_'+type.replace(/[・、。]/g,'');
@@ -819,6 +829,10 @@ function doExport(){
   var sc={冷蔵:0,冷凍:0,常温:0};
   facs.forEach(function(f){ if(S.storage[f.id]){ sc['冷蔵']+=S.storage[f.id]['冷蔵']||0; sc['冷凍']+=S.storage[f.id]['冷凍']||0; sc['常温']+=S.storage[f.id]['常温']||0; } });
   S.revisits.forEach(function(r){ sc['冷蔵']+=(r.storage['冷蔵']||0); sc['冷凍']+=(r.storage['冷凍']||0); sc['常温']+=(r.storage['常温']||0); });
+  var totalReq=0;
+  facs.forEach(function(f){ if(S.counts[f.id]) totalReq+=(S.counts[f.id]['依頼書']||0); });
+  S.revisits.forEach(function(r){ totalReq+=(r.counts['依頼書']||0); });
+  t+='依頼書：'+totalReq+'枚\n';
   t+='\n【保存区分】\n冷蔵：'+sc['冷蔵']+'本　冷凍：'+sc['冷凍']+'本　常温：'+sc['常温']+'本\n';
   var blob=new Blob([t],{type:'text/plain;charset=utf-8'});
   var url=URL.createObjectURL(blob);
