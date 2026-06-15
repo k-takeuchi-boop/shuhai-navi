@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+// about:blank対策：Safariのbfcache/ページ破棄から復帰したとき
+window.addEventListener('pageshow', function(e){
+  if(e.persisted){
+    // bfcacheから復帰 → DOMが壊れてたらリロード
+    if(!document.getElementById('pg-nav')){
+      location.reload();
+    }
+  }
+});
+</script>
+<meta name="theme-color" content="#1a56a0">
+<title>集配ナビ</title>
+<style>
+:root{
+  --primary:#1a56a0;--primary-dark:#123d78;--primary-light:#e8f0fb;
+  --accent:#e8a020;--accent-light:#fff8e8;
+  --danger:#c0392b;--danger-light:#fdecea;
+  --success:#1a7a3c;--success-light:#e8f5ee;
+  --text:#1a1a1a;--text-sub:#666;
+  --border:#dde3ec;--bg:#f4f6fb;--card:#fff;
+  --radius:14px;--shadow:0 2px 10px rgba(26,86,160,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:var(--bg);color:var(--text);font-size:18px;line-height:1.6;}
+.hdr{background:var(--primary);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+.hdr-back{background:none;border:none;color:#fff;font-size:22px;padding:2px 8px;cursor:pointer;display:none;}
+.hdr-back.show{display:block;}
+.hdr-title{font-size:18px;font-weight:700;flex:1;}
+.hdr-sub{font-size:13px;opacity:.8;}
+.hdr-skip{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap;display:none;flex-shrink:0;}
+.hdr-skip.show{display:block;}
+.pg{display:none;padding-bottom:80px;}.pg.on{display:block;}
+.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,.06);}
+.tab{flex:1;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--text-sub);font-size:13px;border:none;background:none;}
+.tab.on{color:var(--primary);}
+.tab-ico{font-size:26px;}
+.tab-ico-wrap{position:relative;display:inline-block;}
+.badge{background:var(--danger);color:#fff;border-radius:10px;font-size:11px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;position:absolute;top:-4px;right:-6px;display:none;}
+.course-grid{padding:12px 14px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.course-card{background:var(--card);border-radius:var(--radius);padding:18px 12px;box-shadow:var(--shadow);border:1.5px solid var(--border);cursor:pointer;text-align:center;border-top:4px solid var(--primary);}
+.course-card:active{background:var(--primary-light);}
+.course-name{font-size:20px;font-weight:700;color:var(--primary);}
+.course-info{font-size:14px;color:var(--text-sub);margin-top:3px;}
+.pre-sec{background:var(--card);border-radius:var(--radius);margin:12px 14px 0;box-shadow:var(--shadow);overflow:hidden;}
+.pre-sec-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.pre-sec-icon{font-size:18px;}
+.pre-sec-title{font-size:16px;font-weight:700;flex:1;}
+.pre-sec-cnt{font-size:14px;color:var(--text-sub);}
+.pre-wb-msg{padding:14px 16px;border-bottom:1px solid var(--border);}
+.pre-wb-msg:last-child{border-bottom:none;}
+.pre-wb-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+.pre-wb-tag{border-radius:5px;padding:4px 10px;font-size:13px;font-weight:700;color:#fff;}
+.pre-wb-date{font-size:13px;color:var(--text-sub);}
+.pre-wb-author{font-size:13px;color:var(--text-sub);margin-left:auto;}
+.pre-wb-text{font-size:17px;font-weight:600;line-height:1.6;margin-bottom:10px;}
+.pre-wb-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px;font-size:16px;font-weight:700;cursor:pointer;}
+.pre-wb-btn.done{background:var(--success);}
+.pre-wb-none{padding:16px;text-align:center;color:var(--text-sub);font-size:15px;}
+.prep-row{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;}
+.prep-row:last-child{border-bottom:none;}
+.prep-chk{width:28px;height:28px;border-radius:6px;border:2px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+.prep-chk.on{background:var(--success);border-color:var(--success);color:#fff;}
+.prep-txt{font-size:16px;flex:1;}
+.prep-txt.on{color:var(--text-sub);text-decoration:line-through;}
+.start-wrap{position:fixed;bottom:0;left:0;right:0;padding:14px 16px 20px;background:var(--card);border-top:1px solid var(--border);}
+.start-btn{width:100%;background:var(--success);color:#fff;border:none;border-radius:var(--radius);padding:20px;font-size:22px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(26,122,60,.25);}
+.start-btn.off{background:#aaa;box-shadow:none;}
+.start-hint{text-align:center;font-size:14px;color:var(--text-sub);margin-top:6px;}
+.prog-sec{background:var(--card);padding:10px 16px;border-bottom:1px solid var(--border);}
+.prog-top{display:flex;justify-content:space-between;margin-bottom:6px;}
+.prog-lbl{font-size:15px;color:var(--text-sub);}
+.prog-cnt{font-size:15px;font-weight:700;color:var(--primary);}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--success);border-radius:3px;transition:width .4s;}
+.fac-card{background:var(--card);border-radius:var(--radius);margin:12px 14px 8px;box-shadow:var(--shadow);overflow:hidden;border:1.5px solid var(--border);}
+.fac-hdr{background:var(--primary);color:#fff;padding:14px 16px;}
+.fac-seq{font-size:14px;opacity:.8;margin-bottom:2px;}
+.fac-name{font-size:26px;font-weight:700;}
+.fac-code{font-size:13px;opacity:.75;margin-top:2px;font-family:monospace;}
+.fac-row{display:flex;}
+.fac-col{flex:1;padding:10px 12px;border-right:1px solid var(--border);}
+.fac-col:last-child{border-right:none;}
+.fac-col-lbl{font-size:13px;font-weight:700;color:var(--text-sub);text-transform:uppercase;letter-spacing:.5px;}
+.fac-col-val{font-size:17px;font-weight:600;margin-top:2px;}
+.fac-col-val.time{color:var(--primary);font-size:22px;}
+.key-box{background:var(--danger-light);border-radius:10px;margin:10px 14px 0;padding:12px 16px;display:flex;align-items:center;gap:12px;}
+.key-num{font-size:34px;font-weight:700;color:var(--danger);letter-spacing:3px;}
+.notes-box{background:var(--accent-light);border-radius:10px;margin:10px 14px 0;padding:12px 16px;}
+.notes-lbl{font-size:13px;font-weight:700;color:#8a6000;margin-bottom:6px;}
+.notes-txt{font-size:15px;line-height:1.8;white-space:pre-wrap;}
+.big-btn{display:block;width:calc(100% - 28px);margin:12px 14px 0;border:none;border-radius:var(--radius);padding:18px;font-size:19px;font-weight:700;cursor:pointer;text-align:center;}
+.big-btn.primary{background:var(--primary);color:#fff;}
+.big-btn.outline{background:var(--card);color:var(--primary);border:2px solid var(--primary);}
+.big-btn.success{background:var(--success);color:#fff;box-shadow:0 4px 12px rgba(26,122,60,.2);}
+.big-btn.done{background:#888;color:#fff;}
+.cnt-sec{margin:12px 14px 0;}
+.cnt-ttl{font-size:15px;font-weight:700;color:var(--text-sub);margin-bottom:8px;}
+.cnt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.cnt-item{background:var(--card);border-radius:10px;border:1.5px solid var(--border);padding:8px 6px;text-align:center;box-shadow:var(--shadow);}
+.cnt-name{font-size:13px;font-weight:600;margin-bottom:6px;min-height:32px;display:flex;align-items:center;justify-content:center;line-height:1.3;}
+.cnt-ctrl{display:flex;align-items:center;justify-content:center;gap:6px;}
+.cnt-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--primary);background:var(--card);color:var(--primary);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cnt-btn:active{background:var(--primary);color:#fff;}
+.cnt-num{font-size:22px;font-weight:700;min-width:22px;text-align:center;}
+.storage-btn{display:block;width:100%;margin-top:8px;border:2px solid var(--primary);border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;background:var(--primary-light);color:var(--primary);}
+.storage-btn.done{background:var(--success-light);color:var(--success);border-color:var(--success);}
+.det-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:12px 14px 0;overflow:hidden;}
+.det-row{padding:12px 16px;border-bottom:1px solid var(--border);}
+.det-row:last-child{border-bottom:none;}
+.det-lbl{font-size:13px;font-weight:700;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;}
+.det-val{font-size:17px;}
+.det-key{font-size:28px;font-weight:700;color:var(--danger);letter-spacing:3px;background:var(--danger-light);display:inline-block;padding:6px 14px;border-radius:8px;}
+.det-notes{font-size:15px;line-height:1.8;white-space:pre-wrap;background:var(--accent-light);padding:12px;border-radius:8px;}
+.det-photo{width:100%;aspect-ratio:4/3;background:#f0f0f0;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#aaa;border:2px dashed #ccc;}
+.fin-wrap{padding:40px 20px;text-align:center;}
+.fin-icon{font-size:64px;margin-bottom:16px;}
+.fin-title{font-size:26px;font-weight:700;color:var(--success);margin-bottom:8px;}
+.fin-sub{font-size:17px;color:var(--text-sub);margin-bottom:24px;}
+.fin-summary{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;text-align:left;box-shadow:var(--shadow);}
+.fin-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:17px;}
+.fin-row:last-child{border-bottom:none;font-weight:700;}
+.fin-btn{width:100%;border:none;border-radius:var(--radius);padding:18px;font-size:19px;font-weight:700;cursor:pointer;margin-bottom:10px;}
+.fin-btn.primary{background:var(--primary);color:#fff;}
+.fin-btn.secondary{background:var(--card);color:var(--text);border:1.5px solid var(--border);}
+.wb-wrap{padding:12px 14px 80px;}
+.wb-post-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);padding:16px;font-size:18px;font-weight:700;cursor:pointer;margin-bottom:12px;}
+.wb-msg{background:var(--card);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden;}
+.wb-msg-top{padding:10px 14px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.wb-tag{border-radius:5px;padding:3px 10px;font-size:13px;font-weight:700;color:#fff;}
+.wb-date{font-size:13px;color:var(--text-sub);}
+.wb-author{font-size:13px;color:var(--text-sub);margin-left:auto;}
+.wb-content-txt{padding:12px 14px;font-size:17px;font-weight:600;line-height:1.6;}
+.wb-chips{padding:6px 14px 12px;display:flex;flex-wrap:wrap;gap:4px;}
+.wb-chip{padding:3px 9px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid var(--border);background:var(--bg);color:var(--text-sub);}
+.wb-chip.ck{background:var(--success-light);color:var(--success);border-color:var(--success);}
+.wb-empty{text-align:center;padding:40px;color:var(--text-sub);}
+.wb-sec-lbl{font-size:14px;font-weight:700;color:var(--text-sub);padding:4px 2px 8px;}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:flex-end;}
+.modal-body{background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.modal-close{background:none;border:none;font-size:24px;color:var(--text-sub);cursor:pointer;}
+.modal-label{font-size:14px;font-weight:700;color:var(--text-sub);margin-bottom:4px;margin-top:10px;}
+.modal-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;background:var(--bg);}
+.modal-input:focus{outline:none;border-color:var(--primary);}
+.modal-select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;background:var(--bg);}
+.modal-submit{width:100%;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);padding:16px;font-size:18px;font-weight:700;cursor:pointer;margin-top:16px;}
+.storage-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.storage-row:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <button class="hdr-back" id="hdrBack" onclick="goBack()">&#8592;</button>
+  <div style="flex:1">
+    <div class="hdr-title" id="hdrTitle">集配ナビ</div>
+    <div class="hdr-sub" id="hdrSub">近畿予研 大津営業所</div>
+  </div>
+  <button class="hdr-skip" id="hdrRevisit" onclick="showRevisit()" style="display:none;background:rgba(232,160,32,.3);border-color:rgba(232,160,32,.8);">&#x1F504; 再回収</button>
+  <button class="hdr-skip" id="hdrSkip" onclick="skipFac()">スキップ &#x2192;</button>
+</div>
+<div class="pg on" id="pg-courses"><div class="course-grid" id="courseGrid"></div></div>
+<div class="pg" id="pg-pre"><div id="preContent"></div><div style="height:90px"></div><div class="start-wrap"><button class="start-btn" id="startBtn" onclick="startNav()">&#x1F697; 集配スタート</button><div class="start-hint" id="startHint"></div></div></div>
+<div class="pg" id="pg-nav"><div id="navContent"></div></div>
+<div class="pg" id="pg-det"><div id="detContent" style="padding-bottom:20px"></div></div>
+<div class="pg" id="pg-fin"><div class="fin-wrap" id="finContent"></div></div>
+<div class="pg" id="pg-wb"><div class="wb-wrap" id="wbContent"></div></div>
+<div class="tabs">
+  <button class="tab on" id="tab-courses" onclick="goHome()"><span class="tab-ico">&#x1F5FA;</span>コース</button>
+  <button class="tab" id="tab-wb" onclick="goWb()"><div class="tab-ico-wrap"><span class="tab-ico">&#x1F4CB;</span><span class="badge" id="wbBadge">0</span></div>ホワイトボード</button>
+</div>
+<script>
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbwC1SzbINqXpwauo6MZcRg4_XXOpfYJBuC2BLd8TM8Qj-WEjymur3mCnfKdS2GVHiQ/exec';
+
+var COURSES_DAY = [
+  {code:'02',name:'02コース'},{code:'03',name:'03コース'},{code:'05',name:'05コース'},
+  {code:'06',name:'06コース'},{code:'07',name:'07コース'},{code:'10',name:'10コース'},
+  {code:'11',name:'11コース'},{code:'12',name:'12コース'},{code:'14',name:'14コース'},
+  {code:'17',name:'17コース'},{code:'21',name:'21コース'},{code:'23',name:'23コース'},
+  {code:'高島',name:'高島業務'},{code:'緊急',name:'緊急コース'}
+];
+var COURSES_NIGHT = [
+  {code:'夜A',name:'夜Aコース'},{code:'夜B',name:'夜Bコース'},{code:'夜C',name:'夜Cコース'},
+  {code:'夜D',name:'夜Dコース'},{code:'夜E',name:'夜Eコース'},{code:'夜F',name:'夜Fコース'},
+  {code:'夜G',name:'夜Gコース'},{code:'夜H',name:'夜Hコース'}
+];
+var COURSES = COURSES_DAY.concat(COURSES_NIGHT);
+var CNAME = {};
+COURSES.forEach(function(c){ CNAME[c.code]=c.name; });
+
+var PREP = {
+  '02':['USB持参(日赤志賀）','USB持参(朽木診療所）'],
+  '03':['USB持参(南草津野村病院・なかじま医院ほか）','ドライアイス持参','BOX鍵：小西醫院2356 / すぎうら1457'],
+  '06':['ここあ草津メール便','ここあ草津STメール便','中野CLカギ','かとう皮ふ科カギ'],
+  '07':['八幡病院USB'],
+  '10':['カギ(徳林CL）','USB(樋上医院・メディカルフィットネス守山）','冷蔵BOX 2個'],
+  '11':['集配BOX 4個(AM用・PM用・日野記念病理用・ドライアイスBOX）'],
+  '12':['甲南病院・信楽中央病院(病理・細胞診）成績持参','ETCカード'],
+  '14':['ふじおかCLカギ','たかお泌尿器科カギ'],
+  '17':['USB(おくだ小児科・大津心療内科）'],
+  '21':['ドライアイス','ETCカード','FD(紫香楽病院）'],
+  '23':['クーラーボックス・大検体立て(日赤滋賀病院用）','USB(桂田医院・伊吹医院ほか）','小澤耳鼻科BOX鍵：3568']
+};
+
+var CTYPES = ['普通','血糖','貧血','血漿','凝固','尿','糞便','病理・細胞診','髄液','その他'];
+
+var FACS = {
+  '02':[
+    {id:1,code:'1828600',name:'為我井医院',method:'データのみ',place:'データ持参のみ',time:'11:00',doc:'',container:'',notes:''},
+    {id:2,code:'5919200',name:'麗湖こども園',method:'TEL',place:'',time:'',doc:'',container:'',notes:'園児(9092600）'},
+    {id:3,code:'1828900',name:'小松診療所',method:'',place:'',time:'11:40',doc:'新',container:'ポリ',notes:'木曜日休診\n感受性はセットA\nセット項目は備考欄に記入'},
+    {id:4,code:'1873400',name:'真心水産',method:'TEL',place:'受付',time:'',doc:'',container:'',notes:'11時以降受付。小松水産検便(コード：18285）'},
+    {id:5,code:'1831400',name:'小篠医院',method:'',place:'',time:'11:55',doc:'',container:'',notes:'月・水・金のみ集配\n火・木・土はデータ持参のみ\n裏口のドアは閉まりにくいのでしっかり閉める'},
+    {id:6,code:'1830700',name:'澤村医院',method:'',place:'医院前BOX',time:'12:10',doc:'新',container:'ポリ',notes:'木・金・土曜集配\n木・土曜は13時までに集配'},
+    {id:7,code:'5103900',name:'やすはら眼科CL',method:'',place:'受付',time:'12:20',doc:'新',container:'真空',notes:''},
+    {id:8,code:'1831100',name:'新旭本多医院',method:'',place:'受付',time:'',doc:'新',container:'真空',notes:'10日集金(小切手）3件分→振込へ'},
+    {id:9,code:'1829300',name:'片岡クリニック',method:'',place:'自宅門内BOX',time:'',doc:'新',container:'真空',notes:'閉院時自宅門内にBOX\n木・土は13:00迄に集配'},
+    {id:10,code:'1831500',name:'藁薗本多医院',method:'',place:'受付',time:'12:50',doc:'新',container:'真空',notes:'土曜日は12:30までに回収'},
+    {id:11,code:'1830600',name:'あいりんクリニック',method:'',place:'受付',time:'13:10',doc:'旧',container:'真空',notes:'閉まっていれば裏口専用BOX\n土曜日休診'},
+    {id:12,code:'1830000',name:'おかだ小児科',method:'',place:'裏口よりインターホン',time:'13:20',doc:'新',container:'ポリ',notes:'木曜日午後休診\nデータは必ず手渡し'},
+    {id:13,code:'',name:'今津駅前メンタル',method:'',place:'受付',time:'',doc:'',container:'',notes:'鍵番号「2356」'},
+    {id:14,code:'1829600',name:'今津病院',method:'',place:'検査室',time:'13:40',doc:'新',container:'真空',notes:'土曜日は尿置き場の便検体確認'},
+    {id:15,code:'1829800',name:'今津藤井医院',method:'',place:'処置室',time:'13:50',doc:'新',container:'真空',notes:'木・土は休診の為、データと受付台帳はポストへ'},
+    {id:16,code:'1830500',name:'朽木診療所',method:'',place:'事務室内冷蔵庫',time:'15:15',doc:'',container:'',notes:'USB持参(不在時処置室奥の引き出しに入れる）'},
+    {id:17,code:'1666900',name:'滋賀里病院',method:'',place:'外来',time:'17:10',doc:'新',container:'真空',notes:'検体は全て外来に'},
+    {id:18,code:'1662800',name:'ひかり病院外来',method:'',place:'検査室',time:'17:30',doc:'新',container:'真空',notes:'裏口で受付し当社名札を着けて入る'}
+  ]
+};
+
+var DEMO_WB = [];
+
+function getWb(){
+  try{
+    var msgs=JSON.parse(localStorage.getItem('wb')||'null');
+    if(!msgs) return DEMO_WB;
+    var cutoff=new Date(); cutoff.setDate(cutoff.getDate()-14); cutoff.setHours(0,0,0,0);
+    var filtered=msgs.filter(function(m){
+      if(!m.date||m.date.indexOf('/')===-1) return true;
+      var p=m.date.split('/');
+      var d=new Date(new Date().getFullYear(),parseInt(p[0])-1,parseInt(p[1]));
+      return d>=cutoff;
+    });
+    if(filtered.length!==msgs.length) saveWb(filtered);
+    return filtered;
+  }catch(e){ return DEMO_WB; }
+}
+function saveWb(d){ localStorage.setItem('wb',JSON.stringify(d)); }
+
+function postToGas(data){
+  if(!GAS_URL) return;
+  var params='?action='+encodeURIComponent(data.action);
+  Object.keys(data).forEach(function(k){
+    if(k!=='action') params+='&'+k+'='+encodeURIComponent(data[k]||'');
+  });
+  fetch(GAS_URL+params,{method:'GET',redirect:'follow'})
+    .catch(function(e){ console.log('GAS送信エラー:',e); });
+}
+
+// courseCode(02）→「02コース」形式に変換
+function toLabel(c){
+  if(c==='全体') return '全体';
+  if(c.endsWith('コース')||c.endsWith('業務')) return c;
+  return c+'コース';
+}
+
+function myUnread(courseCode){
+  var today=new Date(); today.setHours(0,0,0,0);
+  var label=toLabel(courseCode);
+  return getWb().filter(function(m){
+    var list=m.course?m.course.split(',').map(function(c){ return c.trim(); }):[];
+    if(list.indexOf('全体')===-1&&list.indexOf(label)===-1) return false;
+    if(m.confirmed&&m.confirmed[label]) return false;
+    var msgDate;
+    if(m.date&&m.date.indexOf('/')!==-1&&m.date.length<=5){
+      var p=m.date.split('/');
+      msgDate=new Date(today.getFullYear(),parseInt(p[0])-1,parseInt(p[1]));
+    } else {
+      msgDate=new Date(m.date);
+    }
+    if(isNaN(msgDate)) return true;
+    return msgDate>=today;
+  });
+}
+
+var S = {
+  course:null, idx:0,
+  done:{}, counts:{}, prepChecks:{}, wbConfirmed:{},
+  storage:{},
+  departureTime:'', returnTime:'',
+  prevPg:'courses',
+  isRevisit:false, revisitReturnIdx:undefined,
+  revisitFacId:undefined, revisitKey:undefined,
+  revisits:[]
+};
+
+// ── localStorage 自動保存・復元 ──────────────────
+var NAV_KEY = 'navState_v10';
+
+function saveCurrentState(){
+  try{
+    if(!S.course){ return; } // コース未選択時は保存しない
+    localStorage.setItem(NAV_KEY, JSON.stringify(S));
+  }catch(e){ console.log('state save error:',e); }
+}
+
+function clearCurrentState(){
+  try{ localStorage.removeItem(NAV_KEY); }catch(e){}
+}
+
+function loadCurrentState(){
+  try{
+    var raw = localStorage.getItem(NAV_KEY);
+    if(!raw) return false;
+    var saved = JSON.parse(raw);
+    if(!saved || !saved.course) return false;
+    // 保存データをSに復元
+    Object.keys(saved).forEach(function(k){ S[k]=saved[k]; });
+    return true;
+  }catch(e){ return false; }
+}
+// ────────────────────────────────────────────────
+
+function facList(){ return FACS[S.course]||[]; }
+function initCounts(id){
+  if(!S.counts[id]){ S.counts[id]={}; CTYPES.forEach(function(t){ S.counts[id][t]=0; }); }
+  if(!S.storage[id]){ S.storage[id]={冷蔵:0,冷凍:0,常温:0}; }
+}
+
+function showPg(id){
+  document.querySelectorAll('.pg').forEach(function(p){ p.classList.remove('on'); });
+  document.getElementById('pg-'+id).classList.add('on');
+}
+function setHdr(title,sub,showBack,showSkip){
+  document.getElementById('hdrTitle').textContent=title;
+  document.getElementById('hdrSub').textContent=sub;
+  document.getElementById('hdrBack').classList.toggle('show',showBack);
+  document.getElementById('hdrSkip').classList.toggle('show',showSkip);
+}
+function setTabOn(id){
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+  var t=document.getElementById('tab-'+id);
+  if(t) t.classList.add('on');
+}
+
+// コース選択画面へ強制リセット（完了・中止・明示的な「コース選択に戻る」用）
+function resetToHome(){
+  S.course=null; S.idx=0; S.done={}; S.counts={}; S.prepChecks={}; S.wbConfirmed={};
+  S.storage={}; S.departureTime=''; S.returnTime='';
+  S.isRevisit=false; S.revisits=[]; S.revisitReturnIdx=undefined;
+  S._beforeWb=null; S.prevPg='courses';
+  document.getElementById('hdrRevisit').style.display='none';
+  clearCurrentState();
+  showPg('courses'); setHdr('集配ナビ','近畿予研 大津営業所',false,false); setTabOn('courses');
+  renderCourses();
+}
+
+// コースタブを押したとき：集配中は画面を保持、未選択時はコース選択へ
+function goHome(){
+  if(S.course){
+    // 集配進行中 → 現在の画面に安全復帰（リセットしない）
+    if(S.departureTime){
+      showPg('nav');
+      setHdr(CNAME[S.course],(S.idx+1)+'/'+facList().length+'件',true,true);
+      setTabOn('courses');
+      renderNav();
+    } else {
+      showPg('pre');
+      setHdr(CNAME[S.course],'出発前確認',true,false);
+      setTabOn('courses');
+      renderPre();
+    }
+  } else {
+    resetToHome();
+  }
+}
+
+// ホワイトボードタブ
+function goWb(){
+  if(S.course && S.departureTime){
+    S._beforeWb='nav';
+  } else if(S.course){
+    S._beforeWb='pre';
+  } else {
+    S._beforeWb='courses';
+  }
+  showPg('wb'); setHdr('ホワイトボード','',false,false); setTabOn('wb'); renderWb();
+}
+
+// ヘッダーの戻るボタン
+function goBack(){
+  if(S.prevPg==='det'){
+    // 詳細画面→ナビ画面
+    S.prevPg='nav';
+    showPg('nav'); setHdr(CNAME[S.course],facList().length+'件',true,true);
+    renderNav();
+  } else if(S._beforeWb==='nav' && S.course && S.departureTime){
+    // WB→ナビ画面
+    S._beforeWb=null;
+    showPg('nav'); setHdr(CNAME[S.course],(S.idx+1)+'/'+facList().length+'件',true,true); setTabOn('courses');
+    renderNav();
+  } else if(S._beforeWb==='pre' && S.course){
+    // WB→出発前確認
+    S._beforeWb=null;
+    showPg('pre'); setHdr(CNAME[S.course],'出発前確認',true,false); setTabOn('courses'); renderPre();
+  } else {
+    resetToHome();
+  }
+}
+
+function renderCourses(){
+  var g=document.getElementById('courseGrid');
+  g.innerHTML=
+    '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">'+
+      '<div onclick="showCourseGroup(\'day\')" style="background:var(--primary);color:#fff;border-radius:var(--radius);padding:24px 12px;text-align:center;cursor:pointer;box-shadow:var(--shadow);">'+
+        '<div style="font-size:32px;margin-bottom:8px">&#x2600;&#xFE0F;</div>'+
+        '<div style="font-size:22px;font-weight:700">昼コース</div>'+
+        '<div style="font-size:15px;opacity:.8;margin-top:4px">'+COURSES_DAY.length+'コース</div>'+
+      '</div>'+
+      '<div onclick="showCourseGroup(\'night\')" style="background:#2c3e7a;color:#fff;border-radius:var(--radius);padding:24px 12px;text-align:center;cursor:pointer;box-shadow:var(--shadow);">'+
+        '<div style="font-size:32px;margin-bottom:8px">&#x1F319;</div>'+
+        '<div style="font-size:22px;font-weight:700">夜コース</div>'+
+        '<div style="font-size:15px;opacity:.8;margin-top:4px">'+COURSES_NIGHT.length+'コース</div>'+
+      '</div>'+
+    '</div>';
+  updateBadge();
+}
+
+function showCourseGroup(type){
+  var g=document.getElementById('courseGrid');
+  var courses=type==='day'?COURSES_DAY:COURSES_NIGHT;
+  var color=type==='day'?'var(--primary)':'#2c3e7a';
+  var icon=type==='day'?'&#x2600;&#xFE0F;':'&#x1F319;';
+  var label=type==='day'?'昼コース':'夜コース';
+  var html='<div style="grid-column:1/-1;">'+
+    '<button onclick="renderCourses()" style="background:none;border:none;color:var(--primary);font-size:16px;font-weight:700;cursor:pointer;padding:4px 0 10px;">&#x2190; 戻る</button>'+
+    '<div style="font-size:18px;font-weight:700;color:'+color+';margin-bottom:8px;">'+icon+' '+label+'</div>'+
+  '</div>';
+  courses.forEach(function(c){
+    var cnt=(FACS[c.code]||[]).length;
+    var uc=0; try{ uc=myUnread(c.code).length; }catch(e){}
+    var cntTxt=cnt>0?cnt+'件':'準備中';
+    if(uc>0) cntTxt+='<span style="color:var(--danger);font-weight:700"> WB '+uc+'件</span>';
+    html+='<div class="course-card" style="border-top-color:'+color+';" onclick="selectCourse(\''+c.code+'\')">'+
+          '<div class="course-name" style="color:'+color+';">'+c.name+'</div>'+
+          '<div class="course-info">'+cntTxt+'</div></div>';
+  });
+  g.innerHTML=html;
+}
+
+function selectCourse(code){
+  S.course=code; S.idx=0; S.done={}; S.counts={}; S.prepChecks={}; S.wbConfirmed={}; S.storage={};
+  S.departureTime=''; S.returnTime=''; S._beforeWb=null;
+  saveCurrentState();
+  showPg('pre'); setHdr(CNAME[code],'出発前確認',true,false); setTabOn('');
+  renderPre();
+}
+
+function renderPre(){
+  var code=S.course;
+  var wbMsgs=myUnread(code);
+  var prepItems=PREP[code]||[];
+  var html='';
+  var wbCntTxt=wbMsgs.length>0?'<span style="color:var(--danger);font-weight:700">未確認 '+wbMsgs.length+'件</span>':'&#x2705; 確認済み';
+  html+='<div class="pre-sec"><div class="pre-sec-hdr"><span class="pre-sec-icon">&#x1F4CB;</span><span class="pre-sec-title">ホワイトボード</span><span class="pre-sec-cnt">'+wbCntTxt+'</span></div>';
+  if(wbMsgs.length===0){
+    html+='<div class="pre-wb-none">あなた宛てのメッセージはありません</div>';
+  } else {
+    wbMsgs.forEach(function(m){
+      var confirmed=S.wbConfirmed[m.id];
+      var isAll=m.course.indexOf('全体')!==-1;
+      var tagBg=isAll?'var(--accent)':'var(--primary)';
+      var tagTxt=isAll?'&#x1F4E2; 全体':m.course;
+      var btnClass=confirmed?'pre-wb-btn done':'pre-wb-btn';
+      var btnTxt=confirmed?'&#x2713; 確認済み':'確認する';
+      html+='<div class="pre-wb-msg">'+
+            '<div class="pre-wb-top">'+
+            '<span class="pre-wb-tag" style="background:'+tagBg+'">'+tagTxt+'</span>'+
+            '<span class="pre-wb-date">'+m.date+'</span>'+
+            '<span class="pre-wb-author">記入：'+m.author+'</span>'+
+            '</div>'+
+            '<div class="pre-wb-text">'+m.content+'</div>';
+      html+='<button class="'+btnClass+'" onclick="confirmWb(\''+m.id+'\',\''+code+'\')">'+btnTxt+'</button>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+  if(prepItems.length>0){
+    var doneCnt=prepItems.filter(function(i){ return S.prepChecks[i]; }).length;
+    html+='<div class="pre-sec"><div class="pre-sec-hdr"><span class="pre-sec-icon">&#x1F392;</span><span class="pre-sec-title">出発前準備</span><span class="pre-sec-cnt">'+doneCnt+'/'+prepItems.length+'</span></div>';
+    prepItems.forEach(function(item){
+      var ck=S.prepChecks[item];
+      html+='<div class="prep-row" onclick="togglePrep(\''+item.replace(/'/g,"\\'")+'\')">'+
+            '<div class="prep-chk '+(ck?'on':'')+'">'+(ck?'&#x2713;':'')+'</div>'+
+            '<div class="prep-txt '+(ck?'on':'')+'">'+item+'</div></div>';
+    });
+    html+='</div>';
+  }
+  var facs=facList();
+  if(facs.length>0){
+    var preview='';
+    facs.slice(0,3).forEach(function(f,i){ preview+=(i+1)+'. '+f.name+(f.time?' ('+f.time+')':'')+'<br>'; });
+    if(facs.length>3) preview+='… 他 '+(facs.length-3)+'件';
+    html+='<div class="pre-sec"><div class="pre-sec-hdr"><span class="pre-sec-icon">&#x1F3E5;</span><span class="pre-sec-title">本日の集配</span><span class="pre-sec-cnt">'+facs.length+'件</span></div>'+
+          '<div style="padding:12px 16px;font-size:14px;color:var(--text-sub);line-height:2">'+preview+'</div></div>';
+  }
+  document.getElementById('preContent').innerHTML=html;
+  updateStartBtn();
+}
+
+function togglePrep(item){
+  S.prepChecks[item]=!S.prepChecks[item];
+  saveCurrentState();
+  renderPre();
+}
+function confirmWb(msgId,courseCode){
+  var label=toLabel(courseCode);
+  S.wbConfirmed[msgId]=true;
+  var msgs=getWb();
+  var m=msgs.find(function(x){ return x.id===msgId; });
+  if(m){ if(!m.confirmed) m.confirmed={}; m.confirmed[label]=true; saveWb(msgs); }
+  saveCurrentState();
+  renderPre(); updateBadge();
+  postToGas({action:'confirm',id:msgId,course:label});
+}
+function updateStartBtn(){
+  var prepItems=PREP[S.course]||[];
+  var prepDone=prepItems.every(function(i){ return S.prepChecks[i]; });
+  var btn=document.getElementById('startBtn');
+  var hint=document.getElementById('startHint');
+  if(prepItems.length>0&&!prepDone){
+    var rem=prepItems.filter(function(i){ return !S.prepChecks[i]; }).length;
+    btn.className='start-btn off';
+    hint.textContent='準備物を全てチェックしてから出発できます(残り'+rem+'件）';
+  } else {
+    btn.className='start-btn';
+    hint.textContent='準備ができたら出発しましょう！';
+  }
+}
+function startNav(){
+  var prepItems=PREP[S.course]||[];
+  if(prepItems.length>0&&!prepItems.every(function(i){ return S.prepChecks[i]; })){ alert('準備物を全てチェックしてください'); return; }
+  var now=new Date();
+  S.departureTime=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  saveCurrentState();
+  showPg('nav'); setHdr(CNAME[S.course],facList().length+'件',true,false); S.prevPg='nav'; renderNav();
+}
+
+function renderNav(){
+  var facs=facList();
+  if(!facs.length){ document.getElementById('navContent').innerHTML='<div style="padding:40px;text-align:center;color:var(--text-sub)">このコースのデータは準備中です</div>'; return; }
+  if(S.idx>=facs.length){ renderFin(); return; }
+  var f=facs[S.idx];
+  initCounts(f.id);
+  var useId=S.isRevisit&&S.revisitFacId===f.id?S.revisitKey:f.id;
+  if(useId!==f.id){ if(!S.counts[useId]){ S.counts[useId]={}; CTYPES.forEach(function(t){ S.counts[useId][t]=0; }); } if(!S.storage[useId]) S.storage[useId]={冷蔵:0,冷凍:0,常温:0}; }
+  var doneCnt=Object.values(S.done).filter(Boolean).length;
+  var pct=Math.round(doneCnt/facs.length*100);
+  var km=f.notes&&f.notes.match(/(?:鍵|番号|カギ)\s*[「『【]?(\d{3,5})[」』】]?/);
+  var keyNum=km?km[1]:null;
+  var h='<div class="prog-sec"><div class="prog-top"><span class="prog-lbl">'+(S.idx+1)+' / '+facs.length+' 件目</span><span class="prog-cnt">完了 '+doneCnt+' / '+facs.length+'件</span></div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div></div>';
+  h+='<div class="fac-card"><div class="fac-hdr"><div class="fac-seq">'+(S.idx+1)+'番目の集配先</div><div class="fac-name">'+f.name+'</div>';
+  if(f.code) h+='<div class="fac-code">コード：'+f.code+'</div>';
+  h+='</div><div class="fac-row">';
+  h+='<div class="fac-col"><div class="fac-col-lbl">到着時間</div><div class="fac-col-val time">'+(f.time||'－')+'</div></div>';
+  h+='<div class="fac-col"><div class="fac-col-lbl">集配場所</div><div class="fac-col-val">'+(f.place||'－')+'</div></div>';
+  h+='<div class="fac-col"><div class="fac-col-lbl">容器</div><div class="fac-col-val">'+(f.container||f.method||'－')+'</div></div>';
+  h+='</div></div>';
+  if(keyNum) h+='<div class="key-box"><span style="font-size:24px">&#x1F511;</span><div><div style="font-size:13px;font-weight:700;color:var(--danger)">鍵番号</div><div class="key-num">'+keyNum+'</div></div></div>';
+  if(f.notes&&f.notes.trim()) h+='<div class="notes-box"><div class="notes-lbl">&#x1F4DD; 注意事項</div><div class="notes-txt">'+f.notes+'</div></div>';
+  h+='<button class="big-btn primary" onclick="openNav(\''+f.name+'\')">&#x1F5FA; Googleマップでナビ開始</button>';
+  h+='<button class="big-btn outline" onclick="showDet('+f.id+')">&#x1F4CB; 詳細情報を見る</button>';
+  h+='<div class="cnt-sec"><div class="cnt-ttl">回収容器を入力</div><div class="cnt-grid">';
+  CTYPES.forEach(function(type){
+    var key='cnt_'+useId+'_'+type.replace(/[・、。]/g,'');
+    var cnt=(S.counts[useId]&&S.counts[useId][type])||0;
+    h+='<div class="cnt-item"><div class="cnt-name">'+type+'</div>'+
+       '<div class="cnt-ctrl">'+
+       '<button class="cnt-btn" onclick="chg(\''+useId+'\',\''+type+'\',-1)">&#x2212;</button>'+
+       '<div class="cnt-num" id="'+key+'">'+cnt+'</div>'+
+       '<button class="cnt-btn" onclick="chg(\''+useId+'\',\''+type+'\',1)">&#xFF0B;</button>'+
+       '</div></div>';
+  });
+  var sc=S.storage[useId]||{冷蔵:0,冷凍:0,常温:0};
+  var scTotal=sc['冷蔵']+sc['冷凍']+sc['常温'];
+  var scClass=scTotal>0?'storage-btn done':'storage-btn';
+  var scTxt=scTotal>0?'&#x2705; 保存区分確認済み(冷蔵'+sc['冷蔵']+' 冷凍'+sc['冷凍']+' 常温'+sc['常温']+'）':'&#x1F9CA; 保存区分を確認する';
+  h+='</div><button class="'+scClass+'" onclick="showStorageForm(\''+useId+'\')">'+scTxt+'</button></div>';
+  var doneClass=S.done[f.id]?'big-btn done':'big-btn success';
+  var doneTxt=S.done[f.id]?'&#x2713; 集配済み　次へ &#x2192;':'&#x2713; 集配完了　次の施設へ &#x2192;';
+  h+='<button class="'+doneClass+'" style="margin-top:14px;padding:20px;font-size:19px" onclick="markDone('+f.id+')">'+doneTxt+'</button><div style="height:20px"></div>';
+  document.getElementById('navContent').innerHTML=h;
+  document.getElementById('hdrSkip').classList.add('show');
+  document.getElementById('hdrRevisit').style.display='block';
+  document.getElementById('hdrSub').textContent=(S.idx+1)+'/'+facs.length+'件';
+  window.scrollTo(0,0);
+}
+
+function chg(id,type,delta){
+  if(!S.counts[id]){ S.counts[id]={}; CTYPES.forEach(function(t){ S.counts[id][t]=0; }); }
+  S.counts[id][type]=Math.max(0,(S.counts[id][type]||0)+delta);
+  var el=document.getElementById('cnt_'+id+'_'+type.replace(/[・、。]/g,''));
+  if(el) el.textContent=S.counts[id][type];
+  saveCurrentState();
+}
+
+function showStorageForm(useId){
+  if(!S.storage[useId]) S.storage[useId]={冷蔵:0,冷凍:0,常温:0};
+  var sc=S.storage[useId];
+  if(sc['冷蔵']===0&&sc['冷凍']===0&&sc['常温']===0){
+    var total=0;
+    if(S.counts[useId]) CTYPES.forEach(function(t){ total+=(S.counts[useId][t]||0); });
+    sc['冷蔵']=total;
+  }
+  var rows='';
+  rows+='<div class="storage-row">'+
+        '<div style="font-size:19px;font-weight:700;color:var(--primary)">冷蔵</div>'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-left:auto;">'+
+        '<div style="font-size:26px;font-weight:700;color:var(--primary);min-width:40px;text-align:center" id="sc_'+useId+'_冷蔵">'+sc['冷蔵']+'</div>'+
+        '<div style="font-size:15px;color:var(--text-sub)">本(自動）</div>'+
+        '</div></div>';
+  ['冷凍','常温'].forEach(function(type){
+    rows+='<div class="storage-row">'+
+          '<div style="font-size:19px;font-weight:600">'+type+'</div>'+
+          '<div style="display:flex;align-items:center;gap:12px;margin-left:auto;">'+
+          '<button class="cnt-btn" onclick="chgStorage(\''+useId+'\',\''+type+'\',-1)">&#x2212;</button>'+
+          '<div style="font-size:24px;font-weight:700;min-width:36px;text-align:center" id="sc_'+useId+'_'+type+'">'+sc[type]+'</div>'+
+          '<button class="cnt-btn" onclick="chgStorage(\''+useId+'\',\''+type+'\',1)">&#xFF0B;</button>'+
+          '</div></div>';
+  });
+  var fac=facList().find(function(x){ return x.id===parseInt(useId)||x.id===useId; });
+  var facName=fac?fac.name:'';
+  var total2=0; if(S.counts[useId]) CTYPES.forEach(function(t){ total2+=(S.counts[useId][t]||0); });
+  var html='<div class="modal-overlay" id="storageModal" onclick="if(event.target===this)this.remove()">'+
+            '<div class="modal-body" onclick="event.stopPropagation()">'+
+            '<div class="modal-title">&#x1F9CA; 保存区分<button class="modal-close" onclick="document.getElementById(\'storageModal\').remove()">&#xD7;</button></div>'+
+            '<div style="font-size:15px;color:var(--text-sub);margin-bottom:6px">'+facName+'</div>'+
+            '<div style="font-size:14px;background:var(--bg);padding:8px 12px;border-radius:8px;margin-bottom:14px;color:var(--text-sub);">合計 '+total2+'本　冷凍・常温を入力すると冷蔵が自動で変わります</div>'+
+            rows+
+            '<button class="modal-submit" onclick="confirmAndNext(\''+useId+'\','+(fac?fac.id:'null')+')">&#x2713; 確認して次の施設へ &#x2192;</button>'+
+            '</div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+function chgStorage(useId,type,delta){
+  if(!S.storage[useId]) S.storage[useId]={冷蔵:0,冷凍:0,常温:0};
+  var sc=S.storage[useId];
+  var total=0; if(S.counts[useId]) CTYPES.forEach(function(t){ total+=(S.counts[useId][t]||0); });
+  var other=type==='冷凍'?sc['常温']:sc['冷凍'];
+  var newVal=Math.max(0,(sc[type]||0)+delta);
+  if(total-newVal-other<0) return;
+  sc[type]=newVal;
+  sc['冷蔵']=total-sc['冷凍']-sc['常温'];
+  var el=document.getElementById('sc_'+useId+'_'+type);
+  if(el) el.textContent=sc[type];
+  var elR=document.getElementById('sc_'+useId+'_冷蔵');
+  if(elR) elR.textContent=sc['冷蔵'];
+  saveCurrentState();
+}
+
+function confirmAndNext(useId,facId){
+  document.getElementById('storageModal').remove();
+  if(facId) markDone(facId);
+}
+
+function markDone(id){
+  S.done[id]=true;
+  if(S.isRevisit){
+    S.revisits.push({
+      facId:id,
+      counts:JSON.parse(JSON.stringify(S.counts[S.revisitKey]||{})),
+      storage:JSON.parse(JSON.stringify(S.storage[S.revisitKey]||{}))
+    });
+    S.isRevisit=false;
+    S.idx=S.revisitReturnIdx;
+    S.revisitReturnIdx=undefined;
+    setHdr(CNAME[S.course],facList().length+'件',true,true);
+    document.getElementById('hdrRevisit').style.display='block';
+  } else {
+    S.idx++;
+  }
+  saveCurrentState();
+  renderNav();
+}
+function skipFac(){ S.idx++; saveCurrentState(); renderNav(); }
+function openNav(name){ window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name+' 滋賀'),'_blank'); }
+
+function showRevisit(){
+  var facs=facList();
+  var rows='';
+  facs.forEach(function(f){
+    rows+='<div onclick="startRevisit('+f.id+')" style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between;">'+
+      '<div><div style="font-size:18px;font-weight:700;">'+f.name+'</div>'+(f.time?'<div style="font-size:13px;color:var(--text-sub)">'+f.time+'</div>':'')+
+      '</div><div style="font-size:22px;color:var(--primary)">&#x276F;</div></div>';
+  });
+  var html='<div class="modal-overlay" id="revisitModal" onclick="if(event.target===this)this.remove()">'+
+    '<div class="modal-body" onclick="event.stopPropagation()" style="max-height:80vh;overflow-y:auto;">'+
+    '<div class="modal-title">&#x1F504; 再回収する施設を選択<button class="modal-close" onclick="document.getElementById(\'revisitModal\').remove()">&#xD7;</button></div>'+
+    rows+'</div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+function startRevisit(facId){
+  document.getElementById('revisitModal').remove();
+  var facs=facList();
+  var revisitIdx=-1;
+  for(var i=0;i<facs.length;i++){ if(facs[i].id===facId){ revisitIdx=i; break; } }
+  if(revisitIdx===-1) return;
+  S.revisitReturnIdx=S.idx;
+  S.revisitFacId=facId;
+  var revisitKey='rv_'+facId+'_'+Date.now();
+  S.revisitKey=revisitKey;
+  S.counts[revisitKey]={}; S.storage[revisitKey]={冷蔵:0,冷凍:0,常温:0};
+  CTYPES.forEach(function(t){ S.counts[revisitKey][t]=0; });
+  S.idx=revisitIdx; S.isRevisit=true;
+  saveCurrentState();
+  setHdr(CNAME[S.course],'再回収：'+facs[revisitIdx].name,true,false);
+  document.getElementById('hdrSkip').classList.remove('show');
+  document.getElementById('hdrRevisit').style.display='none';
+  renderNav();
+}
+
+function showDet(id){
+  var f=facList().find(function(x){ return x.id===id; });
+  if(!f) return;
+  S.prevPg='det'; showPg('det'); setHdr(f.name,'',true,false);
+  var km=f.notes&&f.notes.match(/(?:鍵|番号|カギ)\s*[「『【]?(\d{3,5})[」』】]?/);
+  var kn=km?km[1]:null;
+  var h='';
+  if(f.time||f.place||f.method||f.doc||f.container){
+    h+='<div class="det-card">';
+    if(f.time) h+='<div class="det-row"><div class="det-lbl">到着時間</div><div class="det-val" style="font-size:24px;font-weight:700;color:var(--primary)">&#x23F0; '+f.time+'</div></div>';
+    if(f.place) h+='<div class="det-row"><div class="det-lbl">集配場所</div><div class="det-val">&#x1F4CD; '+f.place+'</div></div>';
+    if(f.method) h+='<div class="det-row"><div class="det-lbl">集配方法</div><div class="det-val">'+(f.method==='TEL'?'&#x1F4DE; TEL集配':f.method)+'</div></div>';
+    var docTxt=[f.doc?'依頼書：'+f.doc:'',f.container?'容器：'+f.container:''].filter(Boolean).join('　');
+    if(docTxt) h+='<div class="det-row"><div class="det-lbl">依頼書 / 容器</div><div class="det-val">'+docTxt+'</div></div>';
+    h+='</div>';
+  }
+  h+='<div class="det-card"><div class="det-row"><div class="det-lbl">&#x1F4F8; 集配場所の写真</div>'+
+     '<div class="det-photo"><div style="font-size:40px">&#x1F5BC;</div><div style="font-size:15px;font-weight:600">NO IMAGE</div><div style="font-size:12px;color:#bbb">写真は後で登録できます</div></div>'+
+     '</div></div>';
+  if(kn) h+='<div class="det-card"><div class="det-row"><div class="det-lbl">&#x1F511; 鍵番号</div><div class="det-key">'+kn+'</div></div></div>';
+  if(f.notes) h+='<div class="det-card"><div class="det-row"><div class="det-lbl">&#x1F4DD; 注意事項</div><div class="det-notes">'+f.notes+'</div></div></div>';
+  if(f.code) h+='<div class="det-card"><div class="det-row"><div class="det-lbl">顧客コード</div><div class="det-val" style="font-family:monospace;font-size:20px">'+f.code+'</div></div></div>';
+  h+='<button class="big-btn primary" style="margin-top:12px" onclick="openNav(\''+f.name+'\')">&#x1F5FA; Googleマップで開く</button>';
+  h+='<button class="big-btn outline" style="margin-top:8px" onclick="goBack()">&#x2190; 集配画面に戻る</button>';
+  document.getElementById('detContent').innerHTML=h;
+}
+
+function renderFin(){
+  showPg('fin'); document.getElementById('hdrSkip').classList.remove('show');
+  document.getElementById('hdrRevisit').style.display='none';
+  setHdr('集配完了','',false,false);
+  var facs=facList();
+  var doneCnt=Object.values(S.done).filter(Boolean).length;
+  var totals={}; CTYPES.forEach(function(t){ totals[t]=0; });
+  facs.forEach(function(f){ if(S.counts[f.id]) CTYPES.forEach(function(t){ totals[t]+=(S.counts[f.id][t]||0); }); });
+  S.revisits.forEach(function(r){ CTYPES.forEach(function(t){ totals[t]+=(r.counts[t]||0); }); });
+  var grand=Object.values(totals).reduce(function(a,b){ return a+b; },0);
+  var sc={冷蔵:0,冷凍:0,常温:0};
+  facs.forEach(function(f){ if(S.storage[f.id]){ sc['冷蔵']+=S.storage[f.id]['冷蔵']||0; sc['冷凍']+=S.storage[f.id]['冷凍']||0; sc['常温']+=S.storage[f.id]['常温']||0; } });
+  S.revisits.forEach(function(r){ sc['冷蔵']+=(r.storage['冷蔵']||0); sc['冷凍']+=(r.storage['冷凍']||0); sc['常温']+=(r.storage['常温']||0); });
+  var rows='';
+  CTYPES.forEach(function(t){ if(totals[t]>0) rows+='<div class="fin-row"><span>'+t+'</span><span>'+totals[t]+'本</span></div>'; });
+  rows+='<div class="fin-row"><span>合計</span><span>'+grand+'本</span></div>';
+  var h='<div class="fin-icon">&#x2705;</div><div class="fin-title">集配完了！</div>'+
+        '<div class="fin-sub">'+CNAME[S.course]+' '+doneCnt+'件完了</div>'+
+        '<div class="fin-summary"><div style="font-size:15px;font-weight:700;color:var(--text-sub);margin-bottom:8px">回収検体サマリー</div>'+rows+'</div>'+
+        '<div class="fin-summary"><div style="font-size:15px;font-weight:700;color:var(--text-sub);margin-bottom:8px">保存区分</div>'+
+        '<div class="fin-row"><span>冷蔵</span><span>'+sc['冷蔵']+'本</span></div>'+
+        '<div class="fin-row"><span>冷凍</span><span>'+sc['冷凍']+'本</span></div>'+
+        '<div class="fin-row"><span>常温</span><span>'+sc['常温']+'本</span></div></div>'+
+        '<button class="fin-btn primary" onclick="exportJournal()">&#x1F4C4; 搬送日誌を出力</button>'+
+        '<button class="fin-btn secondary" onclick="resetToHome()">&#x2190; コース選択に戻る</button>';
+  document.getElementById('finContent').innerHTML=h;
+}
+
+function exportJournal(){
+  var now=new Date();
+  S.returnTime=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  var lastName=localStorage.getItem('driverName')||'';
+  var html='<div class="modal-overlay" id="exportModal" onclick="if(event.target===this)this.remove()">'+
+            '<div class="modal-body" onclick="event.stopPropagation()">'+
+            '<div class="modal-title">&#x1F4C4; 搬送日誌を出力<button class="modal-close" onclick="document.getElementById(\'exportModal\').remove()">&#xD7;</button></div>'+
+            '<div class="modal-label">担当者名</div>'+
+            '<input id="driverNameInput" class="modal-input" type="text" placeholder="例：竹内" value="'+lastName+'">'+
+            '<div style="margin-top:12px;background:var(--bg);border-radius:10px;padding:12px;font-size:15px;color:var(--text-sub);">'+
+            '<div>出発時刻：<strong>'+(S.departureTime||'未記録')+'</strong></div>'+
+            '<div>帰社時刻：<strong>'+S.returnTime+'</strong></div>'+
+            '</div>'+
+            '<button class="modal-submit" onclick="doExport()">出力する</button>'+
+            '</div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+function doExport(){
+  var driverName=document.getElementById('driverNameInput').value.trim();
+  if(!driverName){ alert('担当者名を入力してください'); return; }
+  localStorage.setItem('driverName',driverName);
+  document.getElementById('exportModal').remove();
+  clearCurrentState(); // 正常完了→状態クリア
+  var facs=facList();
+  var today=new Date();
+  var d=today.getFullYear()+'年'+(today.getMonth()+1)+'月'+today.getDate()+'日';
+  var t='検体受領搬送日誌\n日付：'+d+'\nコース：'+CNAME[S.course]+'\n担当者：'+driverName+'\n出発：'+S.departureTime+'　帰社：'+S.returnTime+'\n';
+  t+='──────────────────────\n【集配完了施設】\n';
+  facs.filter(function(f){ return S.done[f.id]; }).forEach(function(f){ t+='✓ '+f.name+'\n'; });
+  S.revisits.forEach(function(r){ var f=facs.find(function(x){ return x.id===r.facId; }); if(f) t+='🔄 '+f.name+'(再回収）\n'; });
+  t+='──────────────────────\n【回収検体】\n';
+  var totals={}; CTYPES.forEach(function(tp){ totals[tp]=0; });
+  facs.forEach(function(f){ if(S.counts[f.id]) CTYPES.forEach(function(tp){ totals[tp]+=(S.counts[f.id][tp]||0); }); });
+  S.revisits.forEach(function(r){ CTYPES.forEach(function(tp){ totals[tp]+=(r.counts[tp]||0); }); });
+  CTYPES.forEach(function(tp){ if(totals[tp]>0) t+=tp+'：'+totals[tp]+'本\n'; });
+  t+='合計：'+Object.values(totals).reduce(function(a,b){ return a+b; },0)+'本\n';
+  var sc={冷蔵:0,冷凍:0,常温:0};
+  facs.forEach(function(f){ if(S.storage[f.id]){ sc['冷蔵']+=S.storage[f.id]['冷蔵']||0; sc['冷凍']+=S.storage[f.id]['冷凍']||0; sc['常温']+=S.storage[f.id]['常温']||0; } });
+  S.revisits.forEach(function(r){ sc['冷蔵']+=(r.storage['冷蔵']||0); sc['冷凍']+=(r.storage['冷凍']||0); sc['常温']+=(r.storage['常温']||0); });
+  t+='\n【保存区分】\n冷蔵：'+sc['冷蔵']+'本　冷凍：'+sc['冷凍']+'本　常温：'+sc['常温']+'本\n';
+  var blob=new Blob([t],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='搬送日誌_'+d.replace(/[年月日]/g,'')+'.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderWb(){
+  var msgs=getWb();
+  var today=new Date();
+  var td=(today.getMonth()+1)+'/'+(today.getDate());
+  var toDate=function(s){
+    if(!s) return new Date(0);
+    if(s.indexOf('/')!==-1&&s.length<=5){
+      var p=s.split('/');
+      return new Date(today.getFullYear(),parseInt(p[0])-1,parseInt(p[1]));
+    }
+    var dt=new Date(s);
+    return isNaN(dt)?new Date(0):new Date(dt.getFullYear(),dt.getMonth(),dt.getDate());
+  };
+  var todayD=toDate(td);
+  var futureMsgs=msgs.filter(function(m){ return toDate(m.date)>todayD; });
+  var todayMsgs=msgs.filter(function(m){ return toDate(m.date).getTime()===todayD.getTime(); });
+  var oldMsgs=msgs.filter(function(m){ return toDate(m.date)<todayD; });
+  var h='<button class="wb-post-btn" onclick="showWbForm()">&#x270F; ホワイトボードに書き込む</button>';
+  if(msgs.length===0){
+    h+='<div class="wb-empty">書き込みはありません</div>';
+  } else {
+    if(todayMsgs.length>0){ h+='<div class="wb-sec-lbl">&#x1F4C5; 本日 '+td+'</div>'; todayMsgs.forEach(function(m){ h+=buildWbCard(m); }); }
+    if(futureMsgs.length>0){ h+='<div class="wb-sec-lbl" style="margin-top:8px">&#x1F4C6; 今後の予定</div>'; futureMsgs.forEach(function(m){ h+=buildWbCard(m); }); }
+    if(oldMsgs.length>0){
+      h+='<div class="wb-sec-lbl" style="margin-top:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="toggleOldWb(this)">'+
+         '<span>&#x1F4C2; 過去('+oldMsgs.length+'件）</span><span id="oldArrow" style="font-size:16px;color:var(--text-sub)">&#x25B6;</span></div>'+
+         '<div id="oldMsgs" style="display:none">';
+      oldMsgs.forEach(function(m){ h+=buildWbCard(m); });
+      h+='</div>';
+    }
+  }
+  document.getElementById('wbContent').innerHTML=h;
+}
+
+function buildWbCard(m){
+  var isAll=m.course==='全体'||m.course.indexOf('全体')!==-1;
+  var bg=isAll?'var(--accent)':'var(--primary)';
+  var tagTxt=isAll?'&#x1F4E2; 全体':m.course;
+  var courseList=m.course?m.course.split(',').map(function(c){ return c.trim(); }):[];
+  var targets=isAll?COURSES.map(function(c){ return toLabel(c.code); }):courseList;
+  var chips='';
+  targets.forEach(function(c){
+    var ck=m.confirmed&&m.confirmed[c];
+    var label=c.replace(/コース$/,'').replace(/業務$/,'');
+    chips+='<span class="wb-chip'+(ck?' ck':'')+'">'+label+(ck?'&#x2713;':'')+'</span>';
+  });
+  return '<div class="wb-msg">'+
+         '<div class="wb-msg-top"><span class="wb-tag" style="background:'+bg+'">'+tagTxt+'</span>'+
+         '<span class="wb-date">'+m.date+'</span><span class="wb-author">記入：'+m.author+'</span></div>'+
+         '<div class="wb-content-txt">'+m.content+'</div>'+
+         (chips?'<div class="wb-chips">'+chips+'</div>':'')+
+         '<div style="display:flex;border-top:1px solid var(--border);">'+
+         '<button style="flex:1;padding:12px;background:none;border:none;border-right:1px solid var(--border);font-size:16px;font-weight:700;color:var(--primary);cursor:pointer;" onclick="editWbMsg(\''+m.id+'\')">&#x270F; 編集</button>'+
+         '<button style="flex:1;padding:12px;background:none;border:none;font-size:16px;font-weight:700;color:var(--danger);cursor:pointer;" onclick="deleteWbMsg(\''+m.id+'\')">&#x1F5D1; 削除</button>'+
+         '</div>'+
+         '</div>';
+}
+
+function toggleOldWb(el){
+  var box=document.getElementById('oldMsgs');
+  var arrow=document.getElementById('oldArrow');
+  if(!box) return;
+  var open=box.style.display!=='none';
+  box.style.display=open?'none':'block';
+  arrow.innerHTML=open?'&#x25B6;':'&#x25BC;';
+}
+
+function deleteWbMsg(msgId){
+  if(!confirm('このメッセージを削除しますか？')) return;
+  var msgs=getWb().filter(function(m){ return m.id!==msgId; });
+  saveWb(msgs); renderWb(); updateBadge();
+  postToGas({action:'deleteMessage',id:msgId});
+}
+
+function editWbMsg(msgId){
+  var msgs=getWb();
+  var m=msgs.find(function(x){ return x.id===msgId; });
+  if(!m) return;
+  var today=new Date();
+  var parts=m.date.split('/');
+  var td=today.getFullYear()+'-'+('0'+parts[0]).slice(-2)+'-'+('0'+parts[1]).slice(-2);
+  var opts='';
+  ['全体'].concat(COURSES.map(function(c){ return toLabel(c.code); })).forEach(function(c){
+    var display=c==='全体'?'&#x1F4E2; 全体(全員宛て）':c;
+    opts+='<option value="'+c+'"'+(m.course===c?' selected':'')+'>'+display+'</option>';
+  });
+  var html='<div class="modal-overlay" id="editModal" onclick="if(event.target===this)this.remove()">'+
+    '<div class="modal-body" onclick="event.stopPropagation()">'+
+    '<div class="modal-title">&#x270F; 編集<button class="modal-close" onclick="document.getElementById(\'editModal\').remove()">&#xD7;</button></div>'+
+    '<div class="modal-label">対象日付</div><input id="editDate" class="modal-input" type="date" value="'+td+'">'+
+    '<div class="modal-label">宛先</div><select id="editCourse" class="modal-select">'+opts+'</select>'+
+    '<div class="modal-label">内容</div><textarea id="editText" class="modal-input" rows="3" style="resize:none">'+m.content+'</textarea>'+
+    '<div class="modal-label">記入者名</div><input id="editAuthor" class="modal-input" type="text" value="'+m.author+'">'+
+    '<button class="modal-submit" onclick="submitEdit(\''+msgId+'\')">保存する</button>'+
+    '</div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+function submitEdit(msgId){
+  var dateVal=document.getElementById('editDate').value;
+  var d=new Date(dateVal);
+  var td=(d.getMonth()+1)+'/'+(d.getDate());
+  var course=document.getElementById('editCourse').value;
+  var content=document.getElementById('editText').value.trim();
+  var author=document.getElementById('editAuthor').value.trim();
+  if(!content){ alert('内容を入力してください'); return; }
+  if(!author){ alert('記入者名を入力してください'); return; }
+  var msgs=getWb();
+  var m=msgs.find(function(x){ return x.id===msgId; });
+  if(m){ m.date=td; m.course=course; m.content=content; m.author=author; }
+  saveWb(msgs);
+  document.getElementById('editModal').remove();
+  renderWb(); updateBadge();
+  postToGas({action:'updateMessage',id:msgId,date:td,course:course,content:content,author:author});
+}
+
+function showWbForm(){
+  var today=new Date();
+  var td=today.getFullYear()+'-'+('0'+(today.getMonth()+1)).slice(-2)+'-'+('0'+today.getDate()).slice(-2);
+  var checkboxes='';
+  checkboxes+='<label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:17px;font-weight:600;">'+
+    '<input type="checkbox" id="wbcCK全体" value="全体" style="width:22px;height:22px;"> &#x1F4E2; 全体(全員宛て）</label>';
+  COURSES.forEach(function(c){
+    checkboxes+='<label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:16px;">'+
+      '<input type="checkbox" id="wbcCK'+c.code+'" value="'+c.code+'" style="width:20px;height:20px;"> '+c.name+'</label>';
+  });
+  var lastAuthor=localStorage.getItem('wbAuthor')||'';
+  var html='<div class="modal-overlay" id="wbModal" onclick="if(event.target===this)this.remove()">'+
+    '<div class="modal-body" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto;">'+
+    '<div class="modal-title">&#x270F; 書き込む<button class="modal-close" onclick="document.getElementById(\'wbModal\').remove()">&#xD7;</button></div>'+
+    '<div class="modal-label">対象日付</div><input id="wbDate" class="modal-input" type="date" value="'+td+'">'+
+    '<div class="modal-label">宛先(複数選択可）</div>'+
+    '<div style="max-height:200px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:4px 12px;background:var(--bg);">'+checkboxes+'</div>'+
+    '<div class="modal-label">内容</div><textarea id="wbText" class="modal-input" rows="3" placeholder="例：07コース 田中クリニック 至急検体あり" style="resize:none"></textarea>'+
+    '<div class="modal-label">記入者名</div><input id="wbAuthorInput" class="modal-input" type="text" placeholder="例：竹内" value="'+lastAuthor+'">'+
+    '<button class="modal-submit" onclick="submitWb()">投稿する</button>'+
+    '</div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
+function submitWb(){
+  var dateVal=document.getElementById('wbDate').value;
+  var d=new Date(dateVal);
+  var td=(d.getMonth()+1)+'/'+(d.getDate());
+  var checkedCourses=[];
+  var allIds=['全体'].concat(COURSES.map(function(c){ return c.code; }));
+  allIds.forEach(function(id){
+    var el=document.getElementById('wbcCK'+id);
+    if(el&&el.checked) checkedCourses.push(id);
+  });
+  if(checkedCourses.length===0){ alert('宛先を1つ以上選択してください'); return; }
+  var courseLabels=checkedCourses.map(function(c){ return toLabel(c); });
+  var course=courseLabels.join(',');
+  var content=document.getElementById('wbText').value.trim();
+  var author=document.getElementById('wbAuthorInput').value.trim();
+  if(!content){ alert('内容を入力してください'); return; }
+  if(!author){ alert('記入者名を入力してください'); return; }
+  localStorage.setItem('wbAuthor',author);
+  var msgs=getWb();
+  var newMsg={id:String(Date.now()),date:td,course:course,content:content,author:author,confirmed:{}};
+  msgs.unshift(newMsg);
+  saveWb(msgs);
+  document.getElementById('wbModal').remove();
+  renderWb(); updateBadge();
+  postToGas({action:'addMessage',id:newMsg.id,date:td,course:course,content:content,author:author});
+}
+
+function updateBadge(){
+  var total=0;
+  COURSES.forEach(function(c){ try{ total+=myUnread(c.code).length; }catch(e){} });
+  var b=document.getElementById('wbBadge');
+  if(b){ b.textContent=total; b.style.display=total>0?'block':'none'; }
+}
+
+// ── Googleマップ復帰時のabout:blank対策 ──────────────
+// SafariのPWAはメモリ不足でページを破棄することがある。
+// visibilitychangeで復帰を検知し、ページが死んでいたら自動リロード。
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible'){
+    // bodyが空 or スクリプトが死んでたらリロード
+    if(!document.getElementById('pg-nav')){
+      location.reload();
+      return;
+    }
+    // ページは生きてるが画面状態がリセットされてた場合の保険
+    try{
+      var raw = localStorage.getItem(NAV_KEY);
+      if(raw){
+        var saved = JSON.parse(raw);
+        if(saved && saved.course && !S.course){
+          Object.keys(saved).forEach(function(k){ S[k]=saved[k]; });
+          if(S.departureTime){
+            showPg('nav');
+            setHdr(CNAME[S.course],(S.idx+1)+'/'+facList().length+'件',true,true);
+            setTabOn('');
+            document.getElementById('hdrRevisit').style.display='block';
+            renderNav();
+          } else if(S.course){
+            showPg('pre');
+            setHdr(CNAME[S.course],'出発前確認',true,false);
+            setTabOn('');
+            renderPre();
+          }
+        }
+      }
+    }catch(e){ console.log('visibility restore error:',e); }
+  }
+});
+
+// 現在のURLをlocalStorageに保存（about:blank対策の保険）
+(function saveHomeUrl(){
+  if(location.href && location.href.indexOf('about:blank') === -1){
+    localStorage.setItem('navHomeUrl', location.href.split('?')[0]);
+  }
+})();
+
+// 初期化 ── 起動時に前回の集配状態を復元する
+(function initApp(){
+  var restored = loadCurrentState();
+  if(restored && S.course){
+    // 前回の集配データあり → 復元して適切な画面へ
+    if(S.departureTime){
+      // 出発済み → ナビ画面へ
+      showPg('nav');
+      setHdr(CNAME[S.course],(S.idx+1)+'/'+facList().length+'件',true,true);
+      setTabOn('');
+      document.getElementById('hdrRevisit').style.display='block';
+      renderNav();
+    } else {
+      // 出発前確認画面へ
+      showPg('pre');
+      setHdr(CNAME[S.course],'出発前確認',true,false);
+      setTabOn('');
+      renderPre();
+    }
+  } else {
+    // 通常起動
+    renderCourses();
+  }
+  updateBadge();
+  if(GAS_URL){
+    fetch(GAS_URL+'?action=getMessages',{redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.messages){
+          var normalized=data.messages.map(function(m){
+            if(m.date&&m.date.indexOf('/')===-1){
+              var dt=new Date(m.date);
+              if(!isNaN(dt)) m.date=(dt.getMonth()+1)+'/'+(dt.getDate());
+            }
+            return m;
+          });
+          saveWb(normalized);
+          updateBadge();
+          renderCourses();
+          if(document.getElementById('pg-wb').classList.contains('on')) renderWb();
+        }
+      })
+      .catch(function(e){ console.log('GAS取得エラー:',e); });
+  }
+})();
+</script>
+</body>
+</html>
