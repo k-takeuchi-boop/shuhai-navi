@@ -688,7 +688,7 @@ function markDone(id){
   renderNav();
 }
 function skipFac(){ S.idx++; saveCurrentState(); renderNav(); }
-function openNav(name){ window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name+' 滋賀'),'_blank'); }
+function openNav(name){ location.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name+' 滋賀'); }
 
 function showRevisit(){
   var facs=facList();
