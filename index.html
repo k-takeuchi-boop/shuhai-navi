@@ -18,6 +18,14 @@
   --radius:14px;--shadow:0 2px 10px rgba(26,86,160,0.10);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+.login-wrap{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;padding:24px;}
+.login-box{background:#fff;border-radius:var(--radius);padding:32px 24px;width:100%;max-width:400px;box-shadow:var(--shadow);}
+.login-title{font-size:22px;font-weight:bold;color:var(--primary);text-align:center;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--text-sub);text-align:center;margin-bottom:24px;}
+.login-lbl{font-size:14px;font-weight:bold;color:var(--text);margin-bottom:6px;display:block;}
+.login-input{width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:16px;margin-bottom:16px;font-family:inherit;}
+.login-input:focus{outline:none;border-color:var(--primary);}
+.login-err{color:var(--danger);font-size:14px;text-align:center;margin-bottom:12px;display:none;}
 body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:var(--bg);color:var(--text);font-size:18px;line-height:1.6;}
 .hdr{background:var(--primary);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);}
 .hdr-back{background:none;border:none;color:#fff;font-size:22px;padding:2px 8px;cursor:pointer;display:none;}
@@ -146,6 +154,18 @@ body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background
 </style>
 </head>
 <body>
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <div class="login-title">集配ナビ</div>
+    <div class="login-sub">近畿予研 大津営業所</div>
+    <label class="login-lbl">メールアドレス</label>
+    <input type="email" class="login-input" id="loginEmail" placeholder="example@email.com">
+    <label class="login-lbl">パスワード</label>
+    <input type="password" class="login-input" id="loginPass" placeholder="パスワード">
+    <div class="login-err" id="loginErr">メールアドレスまたはパスワードが違います</div>
+    <button class="btn btn-primary" onclick="doLogin()">ログイン</button>
+  </div>
+</div>
 <div class="hdr">
   <button class="hdr-back" id="hdrBack" onclick="goBack()">&#8592;</button>
   <div style="flex:1">
