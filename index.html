@@ -163,7 +163,7 @@ body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background
     <label class="login-lbl">パスワード</label>
     <input type="password" class="login-input" id="loginPass" placeholder="パスワード">
     <div class="login-err" id="loginErr">メールアドレスまたはパスワードが違います</div>
-    <button class="btn btn-primary" id="loginBtn">ログイン</button>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%;padding:15px;border-radius:14px;font-size:17px;font-weight:bold;border:none;background:#1a56a0;color:#fff;cursor:pointer;">ログイン</button>
   </div>
 </div>
 <div class="hdr">
@@ -186,6 +186,55 @@ body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background
   <button class="tab" id="tab-wb" onclick="goWb()"><div class="tab-ico-wrap"><span class="tab-ico">&#x1F4CB;</span><span class="badge" id="wbBadge">0</span></div>ホワイトボード</button>
 </div>
 <script>
+// ── Supabase認証 ──────────────────────────────────
+var SUPABASE_URL = 'https://ariyjjgsbzcqspnswkin.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyaXlqamdzYnpjcXNwbnN3a2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NzE1MjEsImV4cCI6MjA5NzI0NzUyMX0.xsFeazLAf5LhMuvcINh_zxQmWsNYR7gAB9KRW7zlQN4';
+var _sb = null;
+
+function getSupabase(){
+  if(_sb) return Promise.resolve(_sb);
+  return import('https://esm.sh/@supabase/supabase-js@2').then(function(mod){
+    _sb = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return _sb;
+  });
+}
+
+function doLogin(){
+  var email = document.getElementById('loginEmail').value.trim();
+  var pass = document.getElementById('loginPass').value;
+  var errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  if(!email || !pass){
+    errEl.textContent = 'メールアドレスとパスワードを入力してください';
+    errEl.style.display = 'block';
+    return;
+  }
+  getSupabase().then(function(sb){
+    return sb.auth.signInWithPassword({email:email, password:pass});
+  }).then(function(res){
+    if(res.error){
+      errEl.textContent = 'メールアドレスまたはパスワードが違います';
+      errEl.style.display = 'block';
+    } else {
+      document.getElementById('loginWrap').style.display = 'none';
+    }
+  }).catch(function(e){
+    errEl.textContent = '通信エラーが発生しました';
+    errEl.style.display = 'block';
+  });
+}
+
+function checkSession(){
+  getSupabase().then(function(sb){
+    return sb.auth.getSession();
+  }).then(function(res){
+    if(res.data && res.data.session){
+      document.getElementById('loginWrap').style.display = 'none';
+    }
+  }).catch(function(e){ console.log('session check error:', e); });
+}
+// ────────────────────────────────────────────────
+
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwC1SzbINqXpwauo6MZcRg4_XXOpfYJBuC2BLd8TM8Qj-WEjymur3mCnfKdS2GVHiQ/exec';
 
 var COURSES_DAY = [
@@ -1096,7 +1145,15 @@ document.addEventListener('visibilitychange', function(){
 })();
 
 // 初期化 ── 起動時に前回の集配状態を復元する
+document.addEventListener('DOMContentLoaded', function(){
+  var btn = document.getElementById('loginBtn');
+  if(btn) btn.addEventListener('click', doLogin);
+  var passEl = document.getElementById('loginPass');
+  if(passEl) passEl.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+});
+
 (function initApp(){
+  checkSession();
   var restored = loadCurrentState();
   if(restored && S.course){
     // 前回の集配データあり → 復元して適切な画面へ
