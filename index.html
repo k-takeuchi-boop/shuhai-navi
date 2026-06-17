@@ -18,6 +18,14 @@
   --radius:14px;--shadow:0 2px 10px rgba(26,86,160,0.10);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+.login-wrap{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;padding:24px;}
+.login-box{background:#fff;border-radius:var(--radius);padding:32px 24px;width:100%;max-width:400px;box-shadow:var(--shadow);}
+.login-title{font-size:22px;font-weight:bold;color:var(--primary);text-align:center;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--text-sub);text-align:center;margin-bottom:24px;}
+.login-lbl{font-size:14px;font-weight:bold;color:var(--text);margin-bottom:6px;display:block;}
+.login-input{width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:16px;margin-bottom:16px;font-family:inherit;}
+.login-input:focus{outline:none;border-color:var(--primary);}
+.login-err{color:var(--danger);font-size:14px;text-align:center;margin-bottom:12px;display:none;}
 body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:var(--bg);color:var(--text);font-size:18px;line-height:1.6;}
 .hdr{background:var(--primary);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);}
 .hdr-back{background:none;border:none;color:#fff;font-size:22px;padding:2px 8px;cursor:pointer;display:none;}
@@ -146,6 +154,18 @@ body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background
 </style>
 </head>
 <body>
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <div class="login-title">集配ナビ</div>
+    <div class="login-sub">近畿予研 大津営業所</div>
+    <label class="login-lbl">メールアドレス</label>
+    <input type="email" class="login-input" id="loginEmail" placeholder="example@email.com">
+    <label class="login-lbl">パスワード</label>
+    <input type="password" class="login-input" id="loginPass" placeholder="パスワード">
+    <div class="login-err" id="loginErr">メールアドレスまたはパスワードが違います</div>
+    <button class="btn btn-primary" id="loginBtn">ログイン</button>
+  </div>
+</div>
 <div class="hdr">
   <button class="hdr-back" id="hdrBack" onclick="goBack()">&#8592;</button>
   <div style="flex:1">
@@ -202,7 +222,7 @@ var CTYPES = ['普通','血糖','貧血','血漿','凝固','尿','糞便','病�
 
 var FACS = {
   '02':[
-    {id:1,code:'1828600',name:'為我井医院',method:'データのみ',place:'データ持参のみ',time:'11:00',doc:'',container:'',notes:''},
+    {id:1,code:'1828600',name:'為我井医院',method:'データのみ',place:'データ持参のみ',time:'11:00',doc:'',container:'',notes:'',orderType:'オーダーリング',reportQty:'1枚持参',reportPlace:'受付',reportClosed:'ポスト',reportElec:'HTTP通信',containerType:'真空採血管',docType:'新バラ',orderNote:'特になし'},
     {id:2,code:'5919200',name:'麗湖こども園',method:'TEL',place:'',time:'',doc:'',container:'',notes:'園児(9092600）'},
     {id:3,code:'1828900',name:'小松診療所',method:'',place:'',time:'11:40',doc:'新',container:'ポリ',notes:'木曜日休診\n感受性はセットA\nセット項目は備考欄に記入'},
     {id:4,code:'1873400',name:'真心水産',method:'TEL',place:'受付',time:'',doc:'',container:'',notes:'11時以降受付。小松水産検便(コード：18285）'},
@@ -406,6 +426,7 @@ function goBack(){
 function renderCourses(){
   var g=document.getElementById('courseGrid');
   g.innerHTML=
+
     '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">'+
       '<div onclick="showCourseGroup(\'day\')" style="background:var(--primary);color:#fff;border-radius:var(--radius);padding:24px 12px;text-align:center;cursor:pointer;box-shadow:var(--shadow);">'+
         '<div style="font-size:32px;margin-bottom:8px">&#x2600;&#xFE0F;</div>'+
@@ -745,6 +766,35 @@ function showDet(id){
      '</div></div>';
   if(kn) h+='<div class="det-card"><div class="det-row"><div class="det-lbl">&#x1F511; 鍵番号</div><div class="det-key">'+kn+'</div></div></div>';
   if(f.notes) h+='<div class="det-card"><div class="det-row"><div class="det-lbl">&#x1F4DD; 注意事項</div><div class="det-notes">'+f.notes+'</div></div></div>';
+  // 依頼関連・成績書・物品関連
+  var hasOrder = f.orderType||f.reportQty||f.reportPlace||f.reportClosed||f.reportElec||f.containerType||f.docType||f.orderNote;
+  if(hasOrder){
+    var gs='display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);';
+    var cs='background:var(--card);padding:10px 12px;';
+    var ls='font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:3px;';
+    var vs='font-size:15px;font-weight:600;color:var(--text);';
+    h+='<div class="det-card">';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--primary);padding:10px 16px 4px;border-bottom:1px solid var(--border);">&#x1F4CB; 依頼関連</div>';
+    h+='<div style="'+gs+'">';
+    h+='<div style="'+cs+'"><div style="'+ls+'">依頼書</div><div style="'+vs+'">'+(f.orderType||'－')+'</div></div>';
+    h+='<div style="'+cs+'"></div>';
+    h+='</div></div>';
+    h+='<div class="det-card">';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--primary);padding:10px 16px 4px;border-bottom:1px solid var(--border);">&#x1F4C4; 成績書</div>';
+    h+='<div style="'+gs+'">';
+    h+='<div style="'+cs+'"><div style="'+ls+'">仕分け</div><div style="'+vs+'">'+(f.reportQty||'－')+'</div></div>';
+    h+='<div style="'+cs+'"><div style="'+ls+'">持参場所</div><div style="'+vs+'">'+(f.reportPlace||'－')+'</div></div>';
+    h+='<div style="'+cs+'"><div style="'+ls+'">閉まってる時</div><div style="'+vs+'">'+(f.reportClosed||'－')+'</div></div>';
+    h+='<div style="'+cs+'"><div style="'+ls+'">電子成績書</div><div style="'+vs+'">'+(f.reportElec||'－')+'</div></div>';
+    h+='</div></div>';
+    h+='<div class="det-card">';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--primary);padding:10px 16px 4px;border-bottom:1px solid var(--border);">&#x1F4E6; 物品関連</div>';
+    h+='<div style="'+gs+'">';
+    h+='<div style="'+cs+'"><div style="'+ls+'">容器</div><div style="'+vs+'">'+(f.containerType||'－')+'</div></div>';
+    h+='<div style="'+cs+'"><div style="'+ls+'">依頼書</div><div style="'+vs+'">'+(f.docType||'－')+'</div></div>';
+    h+='<div style="grid-column:1/-1;'+cs+'"><div style="'+ls+'">注文の注意事項</div><div style="'+vs+'">'+(f.orderNote||'－')+'</div></div>';
+    h+='</div></div>';
+  }
   if(f.code) h+='<div class="det-card"><div class="det-row"><div class="det-lbl">顧客コード</div><div class="det-val" style="font-family:monospace;font-size:20px">'+f.code+'</div></div></div>';
   h+='<button class="big-btn primary" style="margin-top:12px" onclick="openNav(\''+f.name+'\')">&#x1F5FA; Googleマップで開く</button>';
   h+='<button class="big-btn outline" style="margin-top:8px" onclick="goBack()">&#x2190; 集配画面に戻る</button>';
